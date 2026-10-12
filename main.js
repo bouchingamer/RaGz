@@ -1,12 +1,9 @@
-// Ragdoll - G shoves the character in front of you, Shift+G knocks over everyone nearby.
-// The game's own characters can't be bent (their body parts are not exposed), so while a character is knocked down the original is hidden
-// and replaced by a ragdoll puppet: an articulated skeleton (Verlet physics) that tumbles off the floor and the maze walls, then gets up.
+
 const g = windz.game, THREE = windz.THREE;
 const C = (k, d) => mod.getConfig(k, d);
 const KEY = C('key', 'KeyG');
 const bus = windz.bus = windz.bus || (() => { const h = {}; return { on(e, f) { (h[e] = h[e] || []).push(f); }, emit(e, ...a) { (h[e] || []).forEach(f => { try { f(...a); } catch (x) { console.error(x); } }); } }; })();
 
-/* =========================== sound =========================== */
 let ac = null, lastThud = 0;
 function tone(f0, f1, dur, type, vol) {
   if (!C('sound', true) || vol <= .002) return;
@@ -115,7 +112,6 @@ class Body {
   speed() { let s = 0; for (const q of this.p) s += Math.hypot(q.x - q.px, q.y - q.py, q.z - q.pz); return s / this.p.length / STEP; }
 }
 
-/* =========================== puppets (visual models) =========================== */
 const LOOKS = {
   player: { skin: 0xf1c9a5, top: 0x2563eb, bottom: 0x1f2937, shoes: 0x111827, hair: 0x5b3a1a, extra: 'backpack' },
   windz: { skin: 0xe8b89a, top: 0x2b2d42, bottom: 0x2b2d42, shoes: 0x111111, extra: 'suit' },
@@ -141,7 +137,6 @@ function makePuppet(look, s) {
     handL: ball(.06, skin), handR: ball(.06, skin), footL: ball(.075, mat(look.shoes)), footR: ball(.075, mat(look.shoes)),
     elL: ball(.052, top), elR: ball(.052, top), knL: ball(.066, bot), knR: ball(.066, bot)
   };
-  // torso group (aligned with the body, so tie / backpack / whistle can be attached in real units)
   const torso = new THREE.Group(); root.add(torso);
   const tb = mesh(look.dress ? new THREE.CylinderGeometry(.62, 1, 1, 14) : new THREE.BoxGeometry(1, 1, 1), top); torso.add(tb);
   if (look.dress) torso.userData.dressBottom = mat(look.bottom);
@@ -163,11 +158,11 @@ function makePuppet(look, s) {
   const skirt = look.dress ? mesh(new THREE.CylinderGeometry(.9, 1.35, 1, 14), bot) : null; if (skirt) torso.add(skirt);
   return { root, parts, torso, tb, head, ruler, skirt, s, look };
 }
-function seg(m, a, b) {                                  // stretch a unit-height cylinder from point a to point b
+function seg(m, a, b) { 
   V.a.set(b.x - a.x, b.y - a.y, b.z - a.z); const len = V.a.length() || 1e-4;
   m.position.set((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2); m.quaternion.setFromUnitVectors(Y, V.a.multiplyScalar(1 / len)); m.scale.set(1, len, 1);
 }
-function basis(group, up, across, flipForward) {          // orient a group: y = up, x = across, z = forward
+function basis(group, up, across, flipForward) {
   V.b.copy(up).normalize(); V.a.copy(across); V.c.crossVectors(V.a, V.b).normalize(); V.a.crossVectors(V.b, V.c).normalize();
   V.m.makeBasis(V.a, V.b, V.c); group.quaternion.setFromRotationMatrix(V.m);
 }
@@ -185,9 +180,7 @@ function updatePuppet(pu, body) {
   if (pu.ruler) { const h = g3('haR'), e = g3('elR'); V.a.set(h.x - e.x, h.y - e.y, h.z - e.z).normalize(); const end = { x: h.x + V.a.x * .35 * s, y: h.y + V.a.y * .35 * s, z: h.z + V.a.z * .35 * s }; seg(pu.ruler, h, end); }
 }
 function disposePuppet(pu) { if (pu.root.parent) pu.root.parent.remove(pu.root); pu.root.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
-
-/* =========================== targets, ragdolls in progress =========================== */
-const active = [];                                       // { kind, tgt, body, puppet, dur, phase, riseT, yaw, home, s }
+const active = [];
 let cooldown = 0, shockCooldown = 0, clock = 0;
 function gameTargets() {
   const out = [];
@@ -236,9 +229,6 @@ function finish(a, silent) {
   bus.emit('ragdoll-end', a.kind, t.obj);
   if (!silent && a.kind === 'windz') { bus.emit('rage'); }                           // he gets up angry (Animations + Radar react)
 }
-
-/* =========================== per-frame =========================== */
-// advance one ragdoll: physics while it is falling, a blend back to standing once its time is up. Returns true when it has finished getting up.
 function advance(a, dt) {
   if (a.phase === 'fall') {
     a.acc = (a.acc || 0) + dt; let steps = 0; a.body.hit = 0;
