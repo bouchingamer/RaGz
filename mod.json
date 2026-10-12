@@ -1,0 +1,26 @@
+{
+  "id": "ragdoll",
+  "name": "Ragdoll",
+  "version": "1.1.0",
+  "author": "you",
+  "description": "Real ragdoll physics. Press G to shove the character in front of you (Mr. Windz, Principal Gale, Miss Breezy and the residents) - they fly, tumble off the floor and walls, stay stunned, then get back up. Shift+G knocks over everyone nearby. X ragdolls YOU (the camera orbits your tumbling body; X again to get up).",
+  "main": "main.js",
+  "config": {
+    "key": "KeyG",
+    "selfKey": "KeyX",
+    "selfSeconds": 8,
+    "selfForce": 1,
+    "selfCam": "orbit",
+    "selfCamDistance": 3.6,
+    "knockdownOnApple": false,
+    "knockdownSeconds": 2.5,
+    "shoveRange": 3,
+    "force": 1,
+    "windzStun": 5,
+    "otherStun": 6,
+    "shoveCooldown": 2.5,
+    "shockwaveCooldown": 12,
+    "shockwaveRadius": 9,
+    "sound": true
+  }
+}
